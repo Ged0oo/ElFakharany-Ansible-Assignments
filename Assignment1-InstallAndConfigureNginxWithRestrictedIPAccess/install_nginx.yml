@@ -1,0 +1,87 @@
+---
+- name: Install and configure Nginx with restricted IP access
+  hosts: webservers
+  become: yes
+
+  vars:
+    allowed_ips:
+      - 154.183.123.138
+
+  tasks:
+    - name: Install Nginx using dnf
+      dnf:
+        name: nginx
+        state: present
+
+    - name: Create sites-available directory
+      file:
+        path: /etc/nginx/sites-available
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create sites-enabled directory
+      file:
+        path: /etc/nginx/sites-enabled
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy Nginx configuration file
+      template:
+        src: nginx_default.conf.j2
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload Nginx
+
+    - name: Enable default site
+      file:
+        src: /etc/nginx/sites-available/default
+        dest: /etc/nginx/sites-enabled/default
+        state: link
+        force: yes
+      notify: Reload Nginx
+
+    - name: Include sites-enabled directory in nginx.conf
+      lineinfile:
+        path: /etc/nginx/nginx.conf
+        line: "    include /etc/nginx/sites-enabled/*;"
+        insertafter: "    include /etc/nginx/conf.d/\\*.conf;"
+        state: present
+      notify: Reload Nginx
+
+    - name: Create web root directory
+      file:
+        path: /var/www/html
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create simple index.html
+      copy:
+        dest: /var/www/html/index.html
+        content: "Hello from Ansible Nginx\n"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Test Nginx configuration
+      command: nginx -t
+      changed_when: false
+
+    - name: Ensure Nginx is enabled and running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded

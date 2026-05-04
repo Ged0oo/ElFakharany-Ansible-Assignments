@@ -1,0 +1,6 @@
+# Ignore local inventory and secrets
+hosts
+hosts.ini
+.vault_password
+.env
+*.pem
