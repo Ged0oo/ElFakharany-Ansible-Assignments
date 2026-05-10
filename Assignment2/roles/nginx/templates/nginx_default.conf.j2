@@ -1,0 +1,15 @@
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        root /var/www/html;
+        index index.html;
+
+{% for ip in allowed_ips %}
+        allow {{ ip }};
+{% endfor %}
+
+        deny all;
+    }
+}

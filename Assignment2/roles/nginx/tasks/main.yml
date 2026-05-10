@@ -1,0 +1,60 @@
+- name: Install Nginx
+  dnf:
+    name: nginx
+    state: present
+
+- name: Create sites-available directory
+  file:
+    path: /etc/nginx/sites-available
+    state: directory
+    mode: "0755"
+
+- name: Create sites-enabled directory
+  file:
+    path: /etc/nginx/sites-enabled
+    state: directory
+    mode: "0755"
+
+- name: Deploy Nginx config
+  template:
+    src: nginx_default.conf.j2
+    dest: /etc/nginx/sites-available/default
+    mode: "0644"
+  notify: Reload Nginx
+
+- name: Enable default site
+  file:
+    src: /etc/nginx/sites-available/default
+    dest: /etc/nginx/sites-enabled/default
+    state: link
+    force: yes
+  notify: Reload Nginx
+
+- name: Ensure include exists in nginx.conf
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    line: "    include /etc/nginx/sites-enabled/*;"
+    insertafter: "include /etc/nginx/conf.d/\\*.conf;"
+  notify: Reload Nginx
+
+- name: Create web root
+  file:
+    path: /var/www/html
+    state: directory
+    mode: "0755"
+
+- name: Create index.html
+  copy:
+    dest: /var/www/html/index.html
+    content: "Hello from Ansible Nginx\n"
+    mode: "0644"
+
+- name: Test Nginx config
+  command: nginx -t
+  changed_when: false
+
+- name: Start and enable Nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes

@@ -1,0 +1,6 @@
+- name: Install and configure Nginx with restricted IP access
+  hosts: webservers
+  become: yes
+
+  roles:
+    - nginx
